@@ -18,7 +18,7 @@ movies_list = [
         'overview': "En el viaje inaugural del Titanic, el barco más grande jamás construido, Rose...",
         'year': '1997',
         'rating': 7.8,
-        'category': 'Drama, Romance'
+        'category': 'Romance'
     },
     {
         'id': 3,
@@ -26,7 +26,7 @@ movies_list = [
         'overview': "La princesa Leia es capturada y retenida como rehén por el malvado Imperio Galáctico ...",
         'year': '1977',
         'rating': 8.6,
-        'category': 'Acción, Aventura, Fantasía'
+        'category': 'Fantasía'
     },
     {
         'id': 4,
@@ -34,7 +34,7 @@ movies_list = [
         'overview': "La tranquilidad de la Comarca, una región del mundo de la Tierra Media habitada por ...",
         'year': '2001',
         'rating': 8.8,
-        'category': 'Acción, Aventura, Drama'
+        'category': 'Aventura'
     }
 ]
 
@@ -52,3 +52,12 @@ def get_movie_by_id(id: int):
         if movie["id"] == id:
             return movie
     return {"error": "movie not found"}
+
+@app.get("/movies/", tags=["movies"])
+def get_movies_by_category(category: str):
+    for movie in movies_list:
+        if movie["category"] == category:
+            return movie
+                
+    return {"error": "no movies in the category"}
+    #return list(filter(lambda x: x['category'] == category, movies))
