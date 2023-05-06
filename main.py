@@ -45,3 +45,10 @@ def root():
 @app.get("/movies", tags=["movies"])
 def get_all_movies():
     return movies_list
+
+@app.get("/movies/{id}", tags=["movies"])
+def get_movie_by_id(id: int):
+    for movie in movies_list:
+        if movie["id"] == id:
+            return movie
+    return {"error": "movie not found"}
