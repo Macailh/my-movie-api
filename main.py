@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from fastapi import FastAPI, Body, Path
+from fastapi import FastAPI, Body, Path, Query
 from fastapi.responses import HTMLResponse
 
 app = FastAPI()
@@ -46,17 +46,17 @@ def get_all_movies():
 
 
 @app.get("/movies/{id}", tags=["movies"])
-def get_movie_by_id(id: int):
+def get_movie_by_id(id: int = Path(ge=0, le=2000)):
     for movie in movies_list:
-        if movie["id"] == id:
+        if movie.id == id:
             return movie
     return {"error": "movie not found"}
 
 
 @app.get("/movies/", tags=["movies"])
-def get_movies_by_category(category: str):
+def get_movies_by_category(category: str = Query(min_length=3, max_length=50)):
     for movie in movies_list:
-        if movie["category"] == category:
+        if movie.category == category:
             return movie
 
     return {"error": "no movies in the category"}
@@ -85,7 +85,7 @@ def update_movie(id: int, movie: Movie):
 
 
 @app.delete("/movies/{id}", tags=["movies"])
-def delete_movie(id: int):
+def delete_movie(id: int = Path(ge=0, le=2000)):
     for movie in movies_list:
         if movie.id == id:
             movies_list.remove(movie)
