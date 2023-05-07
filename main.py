@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from fastapi import FastAPI, Body, Path
 from fastapi.responses import HTMLResponse
@@ -7,12 +7,24 @@ app = FastAPI()
 
 
 class Movie(BaseModel):
-    id: int
-    title: str
-    overview: str | None = None
-    year: int
-    rating: float
-    category: str | None = None
+    id: int = Field(ge=1)
+    title: str = Field(min_length=1, max_length=50)
+    overview: str | None = Field(default="En la ...", max_length=200)
+    year: int = Field(le=2022)
+    rating: float = Field(default=5, ge=0, le=10)
+    category: str | None = Field(max_length=50)
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "id": 1,
+                "title": "Titanic",
+                "overview": "En el viaje inaugural del Titanic...",
+                "year": 1997,
+                "rating": 7.8,
+                "category": "Romance"
+            }
+        }
 
 
 movies_list = [Movie(id=1, title="Avatar", overview="En un exuberante planeta llamado Pandora viven los Na'vi, seres que ...", year=2009, rating=7.8, category="Acción"),
@@ -79,4 +91,5 @@ def delete_movie(id: int):
             movies_list.remove(movie)
 
             return movies_list
+
     return {"error", "movie not found"}
