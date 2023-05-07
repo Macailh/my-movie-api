@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Body, Path
 from fastapi.responses import HTMLResponse
 
 app = FastAPI()
@@ -61,3 +61,38 @@ def get_movies_by_category(category: str):
                 
     return {"error": "no movies in the category"}
     #return list(filter(lambda x: x['category'] == category, movies))
+
+@app.post("/movies", tags=["movies"])
+def create_movie(id: int = Body(), title: str = Body(), overview: str = Body(), year: int = Body(), rating: float = Body(), category: str = Body()):
+    movies_list.append({
+        "id": id,
+        "tile": title,
+        "overview": overview,
+        "year": year,
+        "rating": rating,
+        "category": category
+    })
+    return movies_list
+
+@app.put("/movies/{id}", tags=["movies"])
+def update_movie(id: int, title: str = Body(), overview: str = Body(), year: int = Body(), rating: float = Body(), category: str = Body()):
+    for movie in movies_list:
+        if movie["id"] == id:
+            movie["title"] = title
+            movie["overview"] = overview
+            movie["year"] = year
+            movie["rating"] = rating
+            movie["category"] = category
+
+            return movies_list
+        
+    return {"error": "movie not found"}
+
+@app.delete("/movies/{id}", tags=["movies"])
+def delete_movie(id: int):
+    for movie in movies_list:
+        if movie["id"] == id:
+            movies_list.remove(movie)
+
+            return movies_list
+    return {"error", "movie not found"}
