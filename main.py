@@ -1,11 +1,31 @@
+from typing import Optional
 from pydantic import BaseModel, Field
 
-from fastapi import FastAPI, Body, Path, Query, HTTPException, status
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Body, Path, Query, HTTPException, status, Request, Depends
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.security import HTTPBearer
+from starlette.requests import Request
+
+from jwt_manager import create_token, validate_token
 
 app = FastAPI()
 app.title = "Movies API"
 app.version = "0.0.1"
+
+
+class JWTBearer(HTTPBearer):
+    async def __call__(self, request: Request):
+        auth = await super().__call__(request)
+        data = validate_token(auth.credentials)
+
+        if data['email'] != "admin@gmail.com":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Invalid credentials")
+
+
+class User(BaseModel):
+    email: str
+    password: str
 
 
 class Movie(BaseModel):
@@ -42,7 +62,14 @@ def root():
     return HTMLResponse("<h1>Start</h1>")
 
 
-@app.get("/movies", tags=["movies"], response_model=list[Movie])
+@app.post("/login", tags=["auth"])
+def login(user: User):
+    if user.email == "admin@gmail.com" and user.password == "admin":
+        token: str = create_token(user.dict())
+        return JSONResponse(status_code=status.HTTP_200_OK, content=token)
+
+
+@app.get("/movies", tags=["movies"], response_model=list[Movie], dependencies=[Depends(JWTBearer)])
 def get_all_movies():
     return movies_list
 
