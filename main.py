@@ -8,9 +8,16 @@ from starlette.requests import Request
 
 from jwt_manager import create_token, validate_token
 
+from config.database import Session, engine, Base
+from models.movie import Movie as MovieModel
+
+from fastapi.encoders import jsonable_encoder
+
 app = FastAPI()
 app.title = "Movies API"
 app.version = "0.0.1"
+
+Base.metadata.create_all(bind=engine)
 
 
 class JWTBearer(HTTPBearer):
@@ -69,59 +76,75 @@ def login(user: User):
         return JSONResponse(status_code=status.HTTP_200_OK, content=token)
 
 
-@app.get("/movies", tags=["movies"], response_model=list[Movie], dependencies=[Depends(JWTBearer)])
+@app.get("/movies", tags=["movies"], response_model=list[Movie])
 def get_all_movies():
-    return movies_list
+    db = Session()
+    result = db.query(MovieModel).all()
+    return JSONResponse(status_code=200, content=jsonable_encoder(result))
 
 
 @app.get("/movies/{id}", tags=["movies"], response_model=Movie)
 def get_movie_by_id(id: int = Path(ge=0, le=2000)):
-    for movie in movies_list:
-        if movie.id == id:
-            return movie
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Movie not found")
+    db = Session()
+    result = db.query(MovieModel).filter(MovieModel.id == id).first()
+
+    if not result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Movie not found")
+
+    return JSONResponse(status_code=200, content=jsonable_encoder(result))
 
 
 @app.get("/movies/", tags=["movies"], response_model=Movie)
 def get_movies_by_category(category: str = Query(min_length=3, max_length=50)):
-    for movie in movies_list:
-        if movie.category == category:
-            return movie
+    db = Session()
+    result = db.query(MovieModel).filter(
+        MovieModel.category == category).first()
 
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                        detail="No movies in the category")
+    if not result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="No movies in the category")
+
+    return JSONResponse(status_code=200, content=jsonable_encoder(result))
 
 
 @app.post("/movies", tags=["movies"], response_model=list[Movie])
 def create_movie(movie: Movie):
-    movies_list.append(movie)
-    return movies_list
+    db = Session()
+    new_movie = MovieModel(**movie.dict())
+    db.add(new_movie)
+    db.commit()
+    return JSONResponse(status_code=201, content={"message": "Movie register sucessfully"})
 
 
 @app.put("/movies/{id}", tags=["movies"], response_model=list[Movie])
 def update_movie(id: int, movie: Movie):
-    for m in movies_list:
-        if m.id == id:
-            m.title = movie.title
-            m.overview = movie.overview
-            m.year = movie.year
-            m.rating = movie.rating
-            m.category = movie.category
+    db = Session()
+    result = db.query(MovieModel).filter(MovieModel.id == id).first()
 
-            return movies_list
+    if not result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Movie not found")
 
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Movie not found")
+    result.title = movie.title
+    result.overview = movie.overview
+    result.year = movie.year
+    result.rating = movie.rating
+    result.category = movie.category
+
+    return JSONResponse(status_code=200, content=jsonable_encoder(result))
 
 
 @app.delete("/movies/{id}", tags=["movies"], response_model=list[Movie])
 def delete_movie(id: int = Path(ge=0, le=2000)):
-    for movie in movies_list:
-        if movie.id == id:
-            movies_list.remove(movie)
+    db = Session()
+    result = db.query(MovieModel).filter(MovieModel.id == id).first()
 
-            return movies_list
+    if not result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Movie not found")
 
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Movie not found")
+    db.delete(result)
+    db.commit()
+
+    return JSONResponse(status_code=204)
