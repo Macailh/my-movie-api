@@ -1,9 +1,11 @@
 from pydantic import BaseModel, Field
 
-from fastapi import FastAPI, Body, Path, Query
+from fastapi import FastAPI, Body, Path, Query, HTTPException, status
 from fastapi.responses import HTMLResponse
 
 app = FastAPI()
+app.title = "Movies API"
+app.version = "0.0.1"
 
 
 class Movie(BaseModel):
@@ -40,36 +42,37 @@ def root():
     return HTMLResponse("<h1>Start</h1>")
 
 
-@app.get("/movies", tags=["movies"])
+@app.get("/movies", tags=["movies"], response_model=list[Movie])
 def get_all_movies():
     return movies_list
 
 
-@app.get("/movies/{id}", tags=["movies"])
+@app.get("/movies/{id}", tags=["movies"], response_model=Movie)
 def get_movie_by_id(id: int = Path(ge=0, le=2000)):
     for movie in movies_list:
         if movie.id == id:
             return movie
-    return {"error": "movie not found"}
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Movie not found")
 
 
-@app.get("/movies/", tags=["movies"])
+@app.get("/movies/", tags=["movies"], response_model=Movie)
 def get_movies_by_category(category: str = Query(min_length=3, max_length=50)):
     for movie in movies_list:
         if movie.category == category:
             return movie
 
-    return {"error": "no movies in the category"}
-    # return list(filter(lambda x: x['category'] == category, movies))
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                        detail="No movies in the category")
 
 
-@app.post("/movies", tags=["movies"])
+@app.post("/movies", tags=["movies"], response_model=list[Movie])
 def create_movie(movie: Movie):
     movies_list.append(movie)
     return movies_list
 
 
-@app.put("/movies/{id}", tags=["movies"])
+@app.put("/movies/{id}", tags=["movies"], response_model=list[Movie])
 def update_movie(id: int, movie: Movie):
     for m in movies_list:
         if m.id == id:
@@ -81,10 +84,11 @@ def update_movie(id: int, movie: Movie):
 
             return movies_list
 
-    return {"error": "movie not found"}
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Movie not found")
 
 
-@app.delete("/movies/{id}", tags=["movies"])
+@app.delete("/movies/{id}", tags=["movies"], response_model=list[Movie])
 def delete_movie(id: int = Path(ge=0, le=2000)):
     for movie in movies_list:
         if movie.id == id:
@@ -92,4 +96,5 @@ def delete_movie(id: int = Path(ge=0, le=2000)):
 
             return movies_list
 
-    return {"error", "movie not found"}
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Movie not found")
