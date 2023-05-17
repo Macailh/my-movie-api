@@ -6,6 +6,7 @@ from fastapi.encoders import jsonable_encoder
 
 from models.movie import Movie as MovieModel
 from config.database import Session
+from services.movies import MovieService
 
 movie_router = APIRouter()
 
@@ -42,14 +43,14 @@ movies_list = [Movie(id=1, title="Avatar", overview="En un exuberante planeta ll
 @movie_router.get("/movies", tags=["movies"], response_model=list[Movie])
 def get_all_movies():
     db = Session()
-    result = db.query(MovieModel).all()
+    result = MovieService(db).get_all_movies()
     return JSONResponse(status_code=200, content=jsonable_encoder(result))
 
 
 @movie_router.get("/movies/{id}", tags=["movies"], response_model=Movie)
 def get_movie_by_id(id: int = Path(ge=0, le=2000)):
     db = Session()
-    result = db.query(MovieModel).filter(MovieModel.id == id).first()
+    result = MovieService(db).get_movie_by_id(id)
 
     if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -61,8 +62,7 @@ def get_movie_by_id(id: int = Path(ge=0, le=2000)):
 @movie_router.get("/movies/", tags=["movies"], response_model=Movie)
 def get_movies_by_category(category: str = Query(min_length=3, max_length=50)):
     db = Session()
-    result = db.query(MovieModel).filter(
-        MovieModel.category == category).first()
+    result = MovieService(db).get_movie_by_category(category)
 
     if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -83,7 +83,7 @@ def create_movie(movie: Movie):
 @movie_router.put("/movies/{id}", tags=["movies"], response_model=list[Movie])
 def update_movie(id: int, movie: Movie):
     db = Session()
-    result = db.query(MovieModel).filter(MovieModel.id == id).first()
+    result = MovieService(db).get_movie_by_id(id)
 
     if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -101,7 +101,9 @@ def update_movie(id: int, movie: Movie):
 @movie_router.delete("/movies/{id}", tags=["movies"], response_model=list[Movie])
 def delete_movie(id: int = Path(ge=0, le=2000)):
     db = Session()
-    result = db.query(MovieModel).filter(MovieModel.id == id).first()
+    result = MovieService(db).delete_movie(id)
+
+    print(result)
 
     if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -110,4 +112,4 @@ def delete_movie(id: int = Path(ge=0, le=2000)):
     db.delete(result)
     db.commit()
 
-    return JSONResponse(status_code=204)
+    return JSONResponse(status_code=204, content={})
