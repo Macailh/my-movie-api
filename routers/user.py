@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
-from jwt_manager import create_token
+from utils.jwt_manager import create_token
 from schemas.user import User
 
 
