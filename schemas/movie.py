@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 
 
 class Movie(BaseModel):
-    id: int = Field(ge=1)
+    id: int | None = None
     title: str = Field(min_length=1, max_length=50)
     overview: str | None = Field(default="En la ...", max_length=200)
     year: int = Field(le=2022)
@@ -12,7 +12,6 @@ class Movie(BaseModel):
     class Config:
         schema_extra = {
             "example": {
-                "id": 1,
                 "title": "Titanic",
                 "overview": "En el viaje inaugural del Titanic...",
                 "year": 1997,

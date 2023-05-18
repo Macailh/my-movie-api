@@ -46,9 +46,7 @@ def get_movies_by_category(category: str = Query(min_length=3, max_length=50)):
 @movie_router.post("/movies", tags=["movies"], response_model=list[Movie])
 def create_movie(movie: Movie):
     db = Session()
-    new_movie = MovieModel(**movie.dict())
-    db.add(new_movie)
-    db.commit()
+    MovieService(db).create_movie(movie)
     return JSONResponse(status_code=201, content={"message": "Movie register sucessfully"})
 
 
@@ -61,11 +59,7 @@ def update_movie(id: int, movie: Movie):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Movie not found")
 
-    result.title = movie.title
-    result.overview = movie.overview
-    result.year = movie.year
-    result.rating = movie.rating
-    result.category = movie.category
+    MovieService(db).update_movie(id, movie)
 
     return JSONResponse(status_code=200, content=jsonable_encoder(result))
 
@@ -73,15 +67,13 @@ def update_movie(id: int, movie: Movie):
 @movie_router.delete("/movies/{id}", tags=["movies"], response_model=list[Movie])
 def delete_movie(id: int = Path(ge=0, le=2000)):
     db = Session()
-    result = MovieService(db).delete_movie(id)
-
-    print(result)
+    result: MovieModel = db.query(MovieModel).filter(
+        MovieModel.id == id).first()
 
     if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Movie not found")
 
-    db.delete(result)
-    db.commit()
+    MovieService(db).delete_movie(id)
 
     return JSONResponse(status_code=204, content={})
